@@ -1,3 +1,7 @@
+<p align="center">
+<img width="200" height="200" alt="TechLens로고" src="https://github.com/user-attachments/assets/3e8b41ac-733c-499a-b49b-bf32eee18ad8" />
+</p>
+
 # TechLens 요구사항정의서 (V1.2)
 
 ## 1. 개요
