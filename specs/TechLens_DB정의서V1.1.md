@@ -2,7 +2,7 @@
 <img width="200" height="200" alt="TechLens로고" src="https://github.com/user-attachments/assets/3e8b41ac-733c-499a-b49b-bf32eee18ad8" />
 </p>
 
-# TechLens 데이터베이스 정의서 (V1.1)
+# TechLens 데이터베이스 정의서 (V1.2)
 
 본 문서는 **Kicom × KNU TechLens 프로젝트**의 데이터베이스 구조를 정의한 문서입니다.  
 본 정의서는 **PostgreSQL 환경**에서 작성되었으며,  
@@ -154,9 +154,9 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
 
 ---
 
-## 5. 주요 변경사항 (V1.0 → V1.1)
+## 5. 주요 변경사항 (V1.1 → V1.2)
 
-| 항목 | V1.0 | V1.1 |
+| 항목 | V1.1 | V1.2 |
 |------|------|------|
 | JWT_BLACKLIST | 사용 | 제거 |
 | RefreshToken | 없음 | 추가 |
@@ -234,7 +234,7 @@ CREATE TABLE patent_ipc_subclass_map (
 ## 메타
 
 ```
-Version: 1.1  
+Version: 1.2  
 Updated: IPC 필드 4종 추가 반영  
 작성자: 심우현 (KNU × Kicom Internship)
 
