@@ -1,3 +1,7 @@
+<p align="center">
+<img width="200" height="200" alt="TechLens로고" src="https://github.com/user-attachments/assets/3e8b41ac-733c-499a-b49b-bf32eee18ad8" />
+</p>
+
 # TechLens 데이터베이스 정의서 (V1.1)
 
 본 문서는 **Kicom × KNU TechLens 프로젝트**의 데이터베이스 구조를 정의한 문서입니다.  
