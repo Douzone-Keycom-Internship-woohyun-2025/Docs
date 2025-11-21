@@ -15,10 +15,10 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
   - [3.2 REFRESH_TOKENS (리프레시 토큰 저장)](#32-refresh_tokens-리프레시-토큰-저장)
   - [3.3 PRESETS (프리셋 정보)](#33-presets-프리셋-정보)
   - [3.4 FAVORITE_PATENTS (관심특허 정보)](#34-favorite_patents-관심특허-정보)
-  - [3.5 PATENT_IPC_SUBCLASS_MAP (특허–Subclass 매핑 정보)](#35-patent_ipc_subclass_map-특허subclass-매핑-정보)
+  - [3.5 PATENT_IPC_SUBCLASS_MAP (특허–Subclass 매핑 정보)](#35-patent_ipc_subclass_map-특허–subclass-매핑-정보)
   - [3.6 IPC_SUBCLASS_MAP (IPC Subclass 사전)](#36-ipc_subclass_map-ipc-subclass-사전)
 - [4. 설계 요약](#4-설계-요약)
-- [5. 주요 변경사항 (V1.1 → V1.2)](#5-주요-변경사항-v11--v12)
+- [5. 주요 변경사항 (V1.0 → V1.1)](#5-주요-변경사항-v10--v11)
 - [6. PostgreSQL 생성 스크립트](#6-postgresql-생성-스크립트)
 - [메타](#메타)
 
@@ -26,8 +26,7 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
 
 ## ERD 다이어그램
 
-<img width="1221" height="866" alt="BookStore (3)" src="https://github.com/user-attachments/assets/873a6b53-ee1c-452c-b23f-a6c386c2d294" />
-
+<img width="1232" height="990" alt="BookStore (4)" src="https://github.com/user-attachments/assets/ffa9a21c-5320-40d0-9537-fcb15d906dd1" />
 
 ---
 
@@ -36,11 +35,11 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
 | 항목 | 내용 |
 |------|------|
 | 데이터베이스명 | TECHLENS_DB |
-| DBMS | **PostgreSQL 14 이상** |
+| DBMS | PostgreSQL 14 이상 |
 | 문자 인코딩 | UTF8 |
-| 정규화 수준 | 제3정규형 (3NF) |
-| 주요 기능 | 사용자 관리, 프리셋 저장, 관심특허 관리, IPC 코드 매핑, RefreshToken 관리 |
-| 테이블 수 | **6개** |
+| 정규화 수준 | 3NF (제3정규형) |
+| 주요 기능 | 사용자, 프리셋, 관심특허, IPC 매핑, RefreshToken |
+| 테이블 수 | 6개 |
 
 ---
 
@@ -48,12 +47,12 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
 
 | No | 테이블명 | 설명 |
 |----|-----------|------|
-| 1 | USERS | 사용자 계정 정보 |
-| 2 | **REFRESH_TOKENS** | RefreshToken 저장 |
-| 3 | PRESETS | 사용자 프리셋 정보 |
-| 4 | FAVORITE_PATENTS | 관심특허 정보 |
-| 5 | PATENT_IPC_SUBCLASS_MAP | 특허–Subclass 매핑 정보 |
-| 6 | IPC_SUBCLASS_MAP | IPC Subclass 사전 정보 |
+| 1 | USERS | 사용자 계정 |
+| 2 | REFRESH_TOKENS | 리프레시 토큰 저장 |
+| 3 | PRESETS | 검색 프리셋 |
+| 4 | FAVORITE_PATENTS | 관심특허 |
+| 5 | PATENT_IPC_SUBCLASS_MAP | 특허–Subclass 매핑 |
+| 6 | IPC_SUBCLASS_MAP | Subclass 사전 |
 
 ---
 
@@ -61,106 +60,93 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
 
 ---
 
-### 3.1 USERS (사용자 계정 정보)
+# 3.1 USERS (사용자 계정 정보)
 
-| 컬럼명 | 데이터 타입 | 제약조건 | 설명 |
-|--------|--------------|-----------|------|
-| USER_TBLKEY | **SERIAL** | PK | 사용자 고유 식별자 |
-| EMAIL | VARCHAR(255) | UNIQUE, NOT NULL | 로그인용 이메일 |
-| PASSWORD_HASH | VARCHAR(255) | NOT NULL | 해시된 비밀번호 (bcrypt) |
-| ADDDATE | **TIMESTAMP** | **DEFAULT NOW()** | 계정 생성일시 (자동) |
-
----
-
-### 3.2 REFRESH_TOKENS (리프레시 토큰 저장)
-
-| 컬럼명 | 데이터 타입 | 제약조건 | 설명 |
-|--------|--------------|-----------|------|
-| USER_TBLKEY | INTEGER | **PK**, FK → USERS.USER_TBLKEY | 사용자 고유 식별자 |
-| REFRESH_TOKEN | TEXT | NOT NULL | RefreshToken 원문 |
-| EXPIRES_AT | TIMESTAMPTZ | NOT NULL | RefreshToken 만료 일시 |
-
-**운영 규칙**
-- 사용자 1명당 RefreshToken **1개만 저장**
-- 로그인 시 기존 토큰 갱신(UPSERT)
-- 로그아웃 시 해당 row 삭제
-- AccessToken 재발급 시 RefreshToken 유효성 검사 후 발급
+| 컬럼 | 타입 | 조건 | 설명 |
+|------|--------|--------|--------|
+| user_tblkey | SERIAL | PK | 사용자 ID |
+| email | VARCHAR(255) | UNIQUE, NOT NULL | 로그인 이메일 |
+| password_hash | VARCHAR(255) | NOT NULL | bcrypt 해시 |
+| adddate | TIMESTAMP | DEFAULT NOW() | 생성일 |
 
 ---
 
-### 3.3 PRESETS (프리셋 정보)
+# 3.2 REFRESH_TOKENS (리프레시 토큰 저장)
 
-| 컬럼명 | 데이터 타입 | 제약조건 | 설명 |
-|--------|--------------|-----------|------|
-| PRESET_TBLKEY | **SERIAL** | PK | 프리셋 고유 식별자 |
-| USER_TBLKEY | INTEGER | FK → USERS.USER_TBLKEY, NOT NULL | 프리셋 소유 사용자 |
-| PRESET_NAME | VARCHAR(255) | NOT NULL | 프리셋 이름 |
-| APPLICANT | VARCHAR(255) | NOT NULL | 검색 대상 회사명 |
-| START_DATE | VARCHAR(8) | NOT NULL | 검색 시작일 (YYYYMMDD) |
-| END_DATE | VARCHAR(8) | NOT NULL | 검색 종료일 (YYYYMMDD) |
-| DESCRIPTION | VARCHAR(500) | NULL | 프리셋 설명 |
-| ADDDATE | **TIMESTAMP** | DEFAULT NOW() | 등록일시 (자동) |
+| 컬럼 | 타입 | 조건 | 설명 |
+|------|--------|--------|--------|
+| user_tblkey | INTEGER | PK, FK | 사용자 ID |
+| refresh_token | TEXT | NOT NULL | RefreshToken |
+| expires_at | TIMESTAMPTZ | NOT NULL | 만료 시각 |
+
+---
+
+# 3.3 PRESETS (프리셋 정보)
+
+| 컬럼 | 타입 | 조건 | 설명 |
+|------|--------|--------|--------|
+| preset_tblkey | SERIAL | PK | 프리셋 ID |
+| user_tblkey | INTEGER | FK | 사용자 |
+| preset_name | VARCHAR(255) | NOT NULL | 프리셋 이름 |
+| applicant | VARCHAR(255) | NOT NULL | 회사명 |
+| start_date | VARCHAR(8) | NOT NULL | 시작일 |
+| end_date | VARCHAR(8) | NOT NULL | 종료일 |
+| description | VARCHAR(500) | NULL | 설명 |
+| adddate | TIMESTAMP | DEFAULT NOW() | 생성일 |
+
+---
+
+# 3.4 FAVORITE_PATENTS (관심특허 정보 · 4개 컬럼 추가 반영)
+
+| 컬럼 | 타입 | 조건 | 설명 |
+|------|--------|--------|--------|
+| patent_tblkey | SERIAL | PK | 관심특허 ID |
+| user_tblkey | INTEGER | FK | 사용자 |
+| application_number | VARCHAR(30) | NOT NULL | 출원번호 |
+| invention_title | VARCHAR(500) | NOT NULL | 발명명 |
+| applicant_name | VARCHAR(255) | NOT NULL | 출원인명 |
+| abstract | TEXT | NULL | 초록 |
+| application_date | VARCHAR(8) | NOT NULL | 출원일 |
+| publication_date | VARCHAR(8) | NULL | 공개일 |
+| register_date | VARCHAR(8) | NULL | 등록일 |
+| register_status | VARCHAR(50) | NULL | 상태 |
+| drawing_url | VARCHAR(500) | NULL | 도면 URL |
+| open_number | VARCHAR(30) | NULL | 공개번호 |
+| publication_number | VARCHAR(30) | NULL | 공고번호 |
+| register_number | VARCHAR(30) | NULL | 등록번호 |
+| main_ipc_code | VARCHAR(10) | NULL | 메인 IPC 코드 |
+| adddate | TIMESTAMP | DEFAULT NOW() | 저장일 |
 
 **제약조건**
-- FOREIGN KEY (`USER_TBLKEY`) REFERENCES `USERS`(`USER_TBLKEY`) ON DELETE CASCADE
+- UNIQUE(user_tblkey, application_number)
+- 사용자 삭제 시 CASCADE
 
 ---
 
-### 3.4 FAVORITE_PATENTS (관심특허 정보)
+# 3.5 PATENT_IPC_SUBCLASS_MAP
 
-| 컬럼명 | 데이터 타입 | 제약조건 | 설명 |
-|--------|--------------|-----------|------|
-| PATENT_TBLKEY | **SERIAL** | PK | 관심특허 고유 식별자 |
-| USER_TBLKEY | INTEGER | FK → USERS.USER_TBLKEY, NOT NULL | 사용자 식별자 |
-| APPLICATION_NUMBER | VARCHAR(30) | NOT NULL | 특허 출원번호 |
-| INVENTION_TITLE | VARCHAR(500) | NOT NULL | 발명의 명칭 |
-| APPLICANT_NAME | VARCHAR(255) | NOT NULL | 출원인명 |
-| ABSTRACT | TEXT | NULL | 초록 요약 |
-| APPLICATION_DATE | VARCHAR(8) | NOT NULL | 출원일 (YYYYMMDD) |
-| PUBLICATION_DATE | VARCHAR(8) | NULL | 공개일 |
-| REGISTER_DATE | VARCHAR(8) | NULL | 등록일 |
-| REGISTER_STATUS | VARCHAR(50) | NULL | 등록 상태 |
-| DRAWING_URL | VARCHAR(500) | NULL | 대표 도면 이미지 |
-| ADDDATE | **TIMESTAMP** | DEFAULT NOW() | 등록일시 |
-
-**제약조건**
-- UNIQUE (`USER_TBLKEY`, `APPLICATION_NUMBER`)
-- FOREIGN KEY (`USER_TBLKEY`) REFERENCES USERS(USER_TBLKEY) ON DELETE CASCADE
+| 컬럼 | 타입 | 조건 | 설명 |
+|------|--------|--------|--------|
+| mapping_tblkey | SERIAL | PK | 매핑 ID |
+| patent_tblkey | INTEGER | FK | 관심특허 |
+| ipc_subclass | VARCHAR(10) | FK | Subclass 코드 |
 
 ---
 
-### 3.5 PATENT_IPC_SUBCLASS_MAP (특허–Subclass 매핑 정보)
+# 3.6 IPC_SUBCLASS_MAP
 
-| 컬럼명 | 데이터 타입 | 제약조건 | 설명 |
-|--------|--------------|-----------|------|
-| MAPPING_TBLKEY | **SERIAL** | PK | 매핑 고유 식별자 |
-| PATENT_TBLKEY | INTEGER | FK → FAVORITE_PATENTS.PATENT_TBLKEY, NOT NULL | 특허 참조 |
-| IPC_SUBCLASS | VARCHAR(10) | FK → IPC_SUBCLASS_MAP.IPC_SUBCLASS, NOT NULL | Subclass 코드 |
-
-**제약조건**
-- UNIQUE (`PATENT_TBLKEY`, `IPC_SUBCLASS`)
-
----
-
-### 3.6 IPC_SUBCLASS_MAP (IPC Subclass 사전)
-
-| 컬럼명 | 데이터 타입 | 제약조건 | 설명 |
-|--------|--------------|-----------|------|
-| IPC_SUBCLASS | VARCHAR(10) | PK, NOT NULL | Subclass 코드 |
-| KOR_NAME | VARCHAR(255) | NOT NULL | 한글 기술명 |
+| 컬럼 | 타입 | 조건 | 설명 |
+|------|--------|--------|--------|
+| ipc_subclass | VARCHAR(10) | PK | Subclass 코드 |
+| kor_name | VARCHAR(255) | NOT NULL | 한글명 |
 
 ---
 
 ## 4. 설계 요약
-
-| 항목 | 내용 |
-|------|------|
-| JWT 정책 | RefreshToken DB 저장 방식 |
-| 로그아웃 | RefreshToken 삭제 방식 |
-| 유효성 검사 | AccessToken: 서명 + exp / RefreshToken: DB 조회 |
-| 확장성 | 다중 디바이스 로그인 시 USER_TBLKEY → 복합 PK로 확장 가능 |
-| 무결성 | FK + UNIQUE 제약 활용 |
-| 정규화 | 제3정규형 유지 |
+- RefreshToken 저장 방식  
+- FK + UNIQUE로 무결성 확보  
+- 관심특허 ↔ Subclass 매핑 구조  
+- 확장성 높은 구조
 
 ---
 
@@ -168,28 +154,15 @@ KIPRIS Open API 기반의 특허 검색 및 분석 서비스를 위한 핵심 �
 
 | 항목 | V1.0 | V1.1 |
 |------|------|------|
-| JWT_BLACKLIST | **사용** | **삭제됨** |
-| RefreshToken | 없음 | **REFRESH_TOKENS 테이블 추가** |
-| 로그아웃 방식 | Blacklist 삽입 | **RefreshToken 삭제 방식** |
-| 테이블 수 | 6개 | 6개 |
+| JWT_BLACKLIST | 사용 | 제거 |
+| RefreshToken | 없음 | 추가 |
+| FAVORITE_PATENTS | IPC 필드 없음 | **4개 IPC 관련 필드 추가** |
 
 ---
 
 ## 6. PostgreSQL 생성 스크립트
 
 ```sql
--- ============================================
--- TechLens Database - PostgreSQL V1.2 (RefreshToken 적용)
--- ============================================
-
-DROP TABLE IF EXISTS patent_ipc_subclass_map CASCADE;
-DROP TABLE IF EXISTS ipc_subclass_map CASCADE;
-DROP TABLE IF EXISTS favorite_patents CASCADE;
-DROP TABLE IF EXISTS presets CASCADE;
-DROP TABLE IF EXISTS refresh_tokens CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-
--- 1) USERS
 CREATE TABLE users (
   user_tblkey    SERIAL PRIMARY KEY,
   email          VARCHAR(255) UNIQUE NOT NULL,
@@ -197,7 +170,6 @@ CREATE TABLE users (
   adddate        TIMESTAMP DEFAULT NOW()
 );
 
--- 2) REFRESH_TOKENS
 CREATE TABLE refresh_tokens (
   user_tblkey     INTEGER PRIMARY KEY,
   refresh_token   TEXT NOT NULL,
@@ -205,7 +177,6 @@ CREATE TABLE refresh_tokens (
   FOREIGN KEY (user_tblkey) REFERENCES users(user_tblkey) ON DELETE CASCADE
 );
 
--- 3) PRESETS
 CREATE TABLE presets (
   preset_tblkey  SERIAL PRIMARY KEY,
   user_tblkey    INTEGER NOT NULL,
@@ -218,7 +189,6 @@ CREATE TABLE presets (
   FOREIGN KEY (user_tblkey) REFERENCES users(user_tblkey) ON DELETE CASCADE
 );
 
--- 4) FAVORITE_PATENTS
 CREATE TABLE favorite_patents (
   patent_tblkey       SERIAL PRIMARY KEY,
   user_tblkey         INTEGER NOT NULL,
@@ -231,18 +201,20 @@ CREATE TABLE favorite_patents (
   register_date       VARCHAR(8),
   register_status     VARCHAR(50),
   drawing_url         VARCHAR(500),
+  open_number         VARCHAR(30),
+  publication_number  VARCHAR(30),
+  register_number     VARCHAR(30),
+  main_ipc_code       VARCHAR(10),
   adddate             TIMESTAMP DEFAULT NOW(),
   FOREIGN KEY (user_tblkey) REFERENCES users(user_tblkey) ON DELETE CASCADE,
   UNIQUE (user_tblkey, application_number)
 );
 
--- 5) IPC_SUBCLASS_MAP
 CREATE TABLE ipc_subclass_map (
   ipc_subclass  VARCHAR(10) PRIMARY KEY NOT NULL,
   kor_name      VARCHAR(255) NOT NULL
 );
 
--- 6) PATENT_IPC_SUBCLASS_MAP
 CREATE TABLE patent_ipc_subclass_map (
   mapping_tblkey  SERIAL PRIMARY KEY,
   patent_tblkey   INTEGER NOT NULL,
@@ -251,26 +223,16 @@ CREATE TABLE patent_ipc_subclass_map (
   FOREIGN KEY (ipc_subclass) REFERENCES ipc_subclass_map(ipc_subclass) ON DELETE CASCADE,
   UNIQUE (patent_tblkey, ipc_subclass)
 );
-
--- 7) 인덱스
-CREATE INDEX idx_users_email           ON users(email);
-CREATE INDEX idx_presets_user          ON presets(user_tblkey);
-CREATE INDEX idx_favorites_user        ON favorite_patents(user_tblkey);
-CREATE INDEX idx_favorites_appnum      ON favorite_patents(application_number);
-CREATE INDEX idx_patent_ipc_patent     ON patent_ipc_subclass_map(patent_tblkey);
-CREATE INDEX idx_patent_ipc_subclass   ON patent_ipc_subclass_map(ipc_subclass);
 ```
 
+---
+
+## 메타
+
 ```
-메타
-
-Version: 1.1
-
-Date: 2025-11-14
-
-작성자: 심우현 (KNU / Kicom Internship)
-
-변경사항: RefreshToken 기반 인증 시스템 반영, JWT_BLACKLIST 제거
+Version: 1.1  
+Updated: IPC 필드 4종 추가 반영  
+작성자: 심우현 (KNU × Kicom Internship)
 
 © 2025 TechLens Project. All rights reserved.
 본 문서는 Kicom × KNU 인턴십 프로그램의 일부이며 무단 복제·배포를 금합니다.
